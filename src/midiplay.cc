@@ -20,7 +20,7 @@
 #include <assert.h>
 
 #define SUPPORT_VIDEO_OUTPUT
-#define SUPPORT_PUZZLE_GAME
+//#define SUPPORT_PUZZLE_GAME
 
 #ifdef __DJGPP__
 # include <conio.h>
@@ -531,6 +531,7 @@ public:
                 if(!ln) break;
                 GotoXY(tx,txtline);
                 Color( backgroundcolor[tx][txtline] = 1);
+                // EDIT-BJW '.'
                 PutC( background[tx][txtline] = '.' );
             }
         }
@@ -613,6 +614,7 @@ public:
                 GotoXY(0, notey);
                 for(int tx=0; tx<int(NColumns); ++tx)
                 {
+                    // EDIT-BJW '.'
                     if(slots[tx][notey] != '.')
                     {
                         Color(slotcolors[tx][notey]);
@@ -706,7 +708,8 @@ public:
 #endif
             {
               static const char map[8+1] = "04261537";
-              RawPrn("\33[0;%s40;3%c", (newcolor&8) ? "1;" : "", map[newcolor&7]);
+              RawPrn("\33[0;%s3%c", (newcolor&8) ? "1;" : "", map[newcolor&7]);
+              //RawPrn("\33[0;%s40;3%c", (newcolor&8) ? "1;" : "", map[newcolor&7]);
               // If xterm-256color is used, try using improved colors:
               //        Translate 8 (dark gray) into #003366 (bluish dark cyan)
               //        Translate 1 (dark blue) into #000033 (darker blue)
@@ -1684,7 +1687,8 @@ private:
             unsigned length = ReadVarLen(tk);
             //std::string data( length?(const char*) &TrackData[tk][CurrentPosition.track[tk].ptr]:0, length );
             CurrentPosition.track[tk].ptr += length;
-            UI.PrintLn("SysEx %02X: %u bytes", byte, length/*, data.c_str()*/);
+            // EDIT-BJW
+            //UI.PrintLn("SysEx %02X: %u bytes", byte, length/*, data.c_str()*/);
             return;
         }
         if(byte == 0xFF)
@@ -1700,7 +1704,8 @@ private:
             if(evtype == 6 && data == "loopEnd"  ) loopEnd   = true;
             if(evtype == 9) current_device[tk] = ChooseDevice(data);
             if(evtype >= 1 && evtype <= 6)
-                UI.PrintLn("Meta %d: %s", evtype, data.c_str());
+                // EDIT-BJW
+                //UI.PrintLn("Meta %d: %s", evtype, data.c_str());
 
             if(evtype == 0xE3) // Special non-spec ADLMIDI special for IMF playback: Direct poke to AdLib
             {
@@ -1770,10 +1775,11 @@ private:
                         i = bank_warnings.lower_bound(bankid);
                     if(i == bank_warnings.end() || *i != bankid)
                     {
-                        UI.PrintLn("[%u]Bank %u undefined, patch=%c%u",
+                    	// EDIT-BJW
+                        /*UI.PrintLn("[%u]Bank %u undefined, patch=%c%u",
                             MidCh,
                             Ch[MidCh].bank_msb,
-                            (midiins&128)?'P':'M', midiins&127);
+                            (midiins&128)?'P':'M', midiins&127);*/
                         bank_warnings.insert(i, bankid);
                     }
                 }
@@ -1784,9 +1790,10 @@ private:
                         i = bank_warnings.lower_bound(bankid);
                     if(i == bank_warnings.end() || *i != bankid)
                     {
-                        UI.PrintLn("[%u]Bank lsb %u undefined",
+			// EDIT-BJW
+                        /*UI.PrintLn("[%u]Bank lsb %u undefined",
                             MidCh,
-                            Ch[MidCh].bank_lsb);
+                            Ch[MidCh].bank_lsb);*/
                         bank_warnings.insert(i, bankid);
                     }
                 }
@@ -1815,7 +1822,8 @@ private:
                 static std::set<unsigned char> missing_warnings;
                 if(!missing_warnings.count(midiins) && (ains.flags & adlinsdata::Flag_NoSound))
                 {
-                    UI.PrintLn("[%i]Playing missing instrument %i", MidCh, midiins);
+                    // EDIT-BJW
+                    //UI.PrintLn("[%i]Playing missing instrument %i", MidCh, midiins);
                     missing_warnings.insert(midiins);
                 }
 
@@ -1994,7 +2002,9 @@ private:
 
                     case 103: cmf_percussion_mode = value; break; // CMF (ctrl 0x67) rhythm mode
                     default:
-                        UI.PrintLn("Ctrl %d <- %d (ch %u)", ctrlno, value, MidCh);
+			// EDIT-BJW
+                        //UI.PrintLn("Ctrl %d <- %d (ch %u)", ctrlno, value, MidCh);
+                        break;
                 }
                 break;
             }
@@ -2251,8 +2261,10 @@ private:
                     value ? long(0.2092 * std::exp(0.0795 * value)) : 0.0;
                 break;
 
-            default: UI.PrintLn("%s %04X <- %d (%cSB) (ch %u)",
-                "NRPN"+!nrpn, addr, value, "LM"[MSB], MidCh);
+            default: /*UI.PrintLn("%s %04X <- %d (%cSB) (ch %u)",
+                "NRPN"+!nrpn, addr, value, "LM"[MSB], MidCh);*/
+                // EDIT-BJW
+                break;
         }
     }
 
@@ -2263,7 +2275,8 @@ private:
         double mt = std::exp(0.00033845077 * Ch[MidCh].portamento);
         NoteUpdate_All(MidCh, Upd_Pitch);
         */
-        UI.PrintLn("Portamento %u: %u (unimplemented)", MidCh, Ch[MidCh].portamento);
+	// EDIT-BJW
+        //UI.PrintLn("Portamento %u: %u (unimplemented)", MidCh, Ch[MidCh].portamento);
     }
 
     void NoteUpdate_All(unsigned MidCh, unsigned props_mask)
@@ -3191,10 +3204,14 @@ int main(int argc, char** argv)
             std::fprintf(stderr, "Couldn't open audio: %s\n", SDL_GetError());
             //return 1;
         }
+	/*
+	Remove audio sample warning. -BJW
+
         if(spec.samples != obtained.samples)
             std::fprintf(stderr, "Wanted (samples=%u,rate=%u,channels=%u); obtained (samples=%u,rate=%u,channels=%u)\n",
                 spec.samples,    spec.freq,    spec.channels,
                 obtained.samples,obtained.freq,obtained.channels);
+        */
     }
 #endif
 
